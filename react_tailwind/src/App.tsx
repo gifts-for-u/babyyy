@@ -58,6 +58,7 @@ const totalMessages = categoryOrderCycle.reduce((total, category) => {
 const STEP_VALUE = totalMessages ? Math.ceil(100 / totalMessages) : 100;
 
 const HEART_URL = 'https://www.svgrepo.com/show/535436/heart.svg';
+const EMOJI_CONFETTI_SYMBOLS = ['😘', '❣️'] as const;
 
 const CAT_ASSETS = {
   idle: {
@@ -73,6 +74,60 @@ const CAT_ASSETS = {
 } as const;
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+let activeEmojiConfetti: HTMLDivElement | null = null;
+let emojiConfettiTimeout: number | undefined;
+
+const launchEmojiConfetti = (trigger?: HTMLElement | null) => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) return;
+
+  if (emojiConfettiTimeout) {
+    window.clearTimeout(emojiConfettiTimeout);
+    emojiConfettiTimeout = undefined;
+  }
+  if (activeEmojiConfetti) {
+    activeEmojiConfetti.remove();
+    activeEmojiConfetti = null;
+  }
+
+  const rect = trigger?.getBoundingClientRect?.();
+  const container = document.createElement('div');
+  container.className = 'emoji-confetti';
+  const originX = rect ? rect.left + rect.width / 2 + window.scrollX : window.innerWidth / 2 + window.scrollX;
+  const originY = rect ? rect.top + rect.height / 2 + window.scrollY : window.innerHeight / 2 + window.scrollY;
+  container.style.left = `${originX}px`;
+  container.style.top = `${originY}px`;
+  container.style.transform = 'translate(-50%, -50%)';
+
+  const totalPieces = 26;
+  for (let i = 0; i < totalPieces; i += 1) {
+    const piece = document.createElement('span');
+    piece.className = 'emoji-confetti__piece';
+    piece.textContent = EMOJI_CONFETTI_SYMBOLS[Math.floor(Math.random() * EMOJI_CONFETTI_SYMBOLS.length)];
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 90 + Math.random() * 80;
+    const duration = 900 + Math.random() * 500;
+    piece.style.setProperty('--confetti-x', `${Math.cos(angle) * distance}px`);
+    piece.style.setProperty('--confetti-y', `${Math.sin(angle) * distance}px`);
+    piece.style.setProperty('--confetti-rotate', `${(Math.random() * 120 - 60).toFixed(2)}deg`);
+    piece.style.animationDuration = `${duration}ms`;
+    piece.style.animationDelay = `${Math.random() * 120}ms`;
+    container.append(piece);
+  }
+
+  document.body.append(container);
+  activeEmojiConfetti = container;
+  requestAnimationFrame(() => container.classList.add('emoji-confetti--active'));
+  emojiConfettiTimeout = window.setTimeout(() => {
+    container.remove();
+    if (activeEmojiConfetti === container) {
+      activeEmojiConfetti = null;
+      emojiConfettiTimeout = undefined;
+    }
+  }, 1600);
+};
 
 export function ApologyMeter({ value, onFill, onComplete }: { value: number; onFill: () => void; onComplete?: () => void }) {
   const [fillLabel, setFillLabel] = useState(() => getRandomFillLabel());
@@ -197,6 +252,13 @@ export function CTAGroup({ onHug, onTalk }: { onHug: () => void; onTalk: () => v
       <button type="button" className="button-primary" onClick={onTalk}>
         Kita Ngobrol Yuk?
       </button>
+      <button
+        type="button"
+        className="button-primary"
+        onClick={(event) => launchEmojiConfetti(event.currentTarget)}
+      >
+        Mwaaa😘❣️
+      </button>
     </div>
   );
 }
@@ -272,7 +334,7 @@ export function ModalHug({ open, onClose }: { open: boolean; onClose: () => void
           decoding="async"
         />
         <p className="text-[#432946]">
-          Bayangin aku peluk kamu erat sekarang, hangat dan penuh sabar sampai kamu siap bicara lagi.
+          Peyukkk kamuuu, nanti kita peyukk yang lamaa yaaa. sayanggg kamuuu😘❣️❣️❣️
         </p>
         <button type="button" className="button-secondary" onClick={onClose}>
           Tutup

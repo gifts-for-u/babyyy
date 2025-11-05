@@ -32,8 +32,11 @@ function initializeApp({ messages, categoryOrderCycle }) {
     'mamas minta maaff',
     'maaff yaa cantikk'
   ];
+  const EMOJI_CONFETTI_SYMBOLS = ['😘', '❣️'];
 
   let lastFillButtonLabel = '';
+  let activeEmojiConfetti;
+  let emojiConfettiTimeout;
 
   const state = {
     progress: 0,
@@ -133,6 +136,55 @@ function initializeApp({ messages, categoryOrderCycle }) {
     }
     elements.fillButton.textContent = nextLabel;
     lastFillButtonLabel = nextLabel;
+  }
+
+  function shootEmojiConfetti(triggerElement) {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (prefersReducedMotion) return;
+    if (emojiConfettiTimeout) {
+      clearTimeout(emojiConfettiTimeout);
+      emojiConfettiTimeout = undefined;
+    }
+    if (activeEmojiConfetti) {
+      activeEmojiConfetti.remove();
+      activeEmojiConfetti = undefined;
+    }
+
+    const rect = triggerElement?.getBoundingClientRect?.();
+    const container = document.createElement('div');
+    container.className = 'emoji-confetti';
+    const originX = rect ? rect.left + rect.width / 2 + window.scrollX : window.innerWidth / 2 + window.scrollX;
+    const originY = rect ? rect.top + rect.height / 2 + window.scrollY : window.innerHeight / 2 + window.scrollY;
+    container.style.left = `${originX}px`;
+    container.style.top = `${originY}px`;
+    container.style.transform = 'translate(-50%, -50%)';
+
+    const pieceTotal = 26;
+    for (let i = 0; i < pieceTotal; i += 1) {
+      const piece = document.createElement('span');
+      piece.className = 'emoji-confetti__piece';
+      piece.textContent = EMOJI_CONFETTI_SYMBOLS[Math.floor(Math.random() * EMOJI_CONFETTI_SYMBOLS.length)];
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 90 + Math.random() * 80;
+      const duration = 900 + Math.random() * 500;
+      piece.style.setProperty('--confetti-x', `${Math.cos(angle) * distance}px`);
+      piece.style.setProperty('--confetti-y', `${Math.sin(angle) * distance}px`);
+      piece.style.setProperty('--confetti-rotate', `${(Math.random() * 120 - 60).toFixed(2)}deg`);
+      piece.style.animationDuration = `${duration}ms`;
+      piece.style.animationDelay = `${Math.random() * 120}ms`;
+      container.append(piece);
+    }
+
+    document.body.append(container);
+    activeEmojiConfetti = container;
+    requestAnimationFrame(() => container.classList.add('emoji-confetti--active'));
+    emojiConfettiTimeout = window.setTimeout(() => {
+      container.remove();
+      if (activeEmojiConfetti === container) {
+        activeEmojiConfetti = undefined;
+        emojiConfettiTimeout = undefined;
+      }
+    }, 1600);
   }
 
   attachImageFallback(elements.catImage);
@@ -330,7 +382,10 @@ function initializeApp({ messages, categoryOrderCycle }) {
     elements.ctaGroup.innerHTML = '';
     const hugButton = createCTAButton('Peluk Aku', () => openDialog(elements.hugModal));
     const talkButton = createCTAButton('Kita Ngobrol Yuk?', () => openDialog(elements.talkDialog));
-    elements.ctaGroup.append(hugButton, talkButton);
+    const celebrateButton = createCTAButton('Mwaaa😘❣️', (event, button) => {
+      shootEmojiConfetti(button);
+    });
+    elements.ctaGroup.append(hugButton, talkButton, celebrateButton);
     setCatMood('hug', { transform: 'translateY(-6px) scale(1.05)', forceReload: true });
     persistState();
   }
@@ -340,7 +395,9 @@ function initializeApp({ messages, categoryOrderCycle }) {
     button.className = 'button button--primary';
     button.type = 'button';
     button.textContent = label;
-    button.addEventListener('click', onClick);
+    button.addEventListener('click', (event) => {
+      onClick?.(event, button);
+    });
     return button;
   }
 

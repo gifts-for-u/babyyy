@@ -338,6 +338,27 @@ body::before {
   filter: drop-shadow(0 6px 16px rgba(244, 114, 182, 0.35));
 }
 
+.emoji-confetti {
+  position: absolute;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0;
+  transition: opacity 160ms ease-out;
+}
+
+.emoji-confetti--active {
+  opacity: 1;
+}
+
+.emoji-confetti__piece {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: clamp(1.4rem, 3.6vw, 2.2rem);
+  animation: emoji-confetti-flight 1000ms ease-out forwards;
+  filter: drop-shadow(0 8px 18px rgba(244, 114, 182, 0.4));
+}
+
 .cat__sparkle {
   position: absolute;
   inset: -10% -10% -25% -10%;
@@ -349,7 +370,8 @@ body::before {
 
 body.reduced-motion .message,
 body.reduced-motion .completion,
-body.reduced-motion .heart {
+body.reduced-motion .heart,
+body.reduced-motion .emoji-confetti__piece {
   animation-duration: 1ms;
 }
 
@@ -376,6 +398,21 @@ body.reduced-motion .hero__cat img {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes emoji-confetti-flight {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.85) rotate(0deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--confetti-x, 0), var(--confetti-y, -120px), 0) scale(1.15)
+      rotate(var(--confetti-rotate, 25deg));
   }
 }
 
