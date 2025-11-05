@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Meteran Maaf</title>
     <link rel="preload" href="styles.css" as="style" />
+    <link rel="preload" href="assets/cat/cat-8.png" as="image" />
+    <link rel="preload" href="assets/cat/cat-9.png" as="image" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -19,7 +21,16 @@
       </div>
       <header class="hero" aria-live="polite">
         <div class="hero__cat" aria-hidden="true">
-          <img src="assets/cat/cat_idle.svg" alt="Ilustrasi kucing sedih tapi berharap" id="cat-image" />
+          <img
+            src="assets/cat/cat-8.png"
+            alt="Ilustrasi kucing sedih tapi berharap"
+            id="cat-image"
+            width="512"
+            height="512"
+            data-fallback-src="assets/cat/cat_idle.svg"
+            decoding="async"
+            loading="eager"
+          />
           <div class="cat__sparkle" aria-hidden="true"></div>
         </div>
         <div class="hero__text">
@@ -55,7 +66,16 @@
     <dialog id="hug-modal" aria-labelledby="hug-title">
       <form method="dialog">
         <h2 id="hug-title">Pelukan dari Si Kucing</h2>
-        <img src="assets/cat/cat_hug.svg" alt="Kucing membuka tangan untuk peluk" class="modal__image" />
+        <img
+          src="assets/cat/cat-9.png"
+          alt="Kucing membuka tangan untuk peluk"
+          class="modal__image"
+          width="512"
+          height="512"
+          data-fallback-src="assets/cat/cat_hug.svg"
+          decoding="async"
+          loading="lazy"
+        />
         <p>Bayangin aku bener-bener peluk kamu sekarang, hangat dan nggak akan lepas sampai kamu siap.</p>
         <button class="button" value="close">Tutup</button>
       </form>

@@ -34,6 +34,19 @@ const elements = {
   messageTemplate: document.getElementById('message-template')
 };
 
+const CAT_ASSETS = {
+  idle: {
+    primary: 'assets/cat/cat-8.png',
+    fallback: 'assets/cat/cat_idle.svg',
+    alt: 'Ilustrasi kucing sedih tapi berharap'
+  },
+  hug: {
+    primary: 'assets/cat/cat-9.png',
+    fallback: 'assets/cat/cat_hug.svg',
+    alt: 'Kucing membuka tangan untuk peluk'
+  }
+};
+
 const totalMessages = categoryOrderCycle.reduce((total, category) => {
   return total + (messages[category]?.length ?? 0);
 }, 0);
@@ -43,6 +56,50 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
 if (prefersReducedMotion) {
   document.body.classList.add('reduced-motion');
 }
+
+function attachImageFallback(image) {
+  if (!image) return;
+  image.addEventListener('error', () => {
+    if (image.dataset.usingFallback === 'true') return;
+    if (image.dataset.fallbackSrc) {
+      image.dataset.usingFallback = 'true';
+      image.src = image.dataset.fallbackSrc;
+    }
+  });
+}
+
+function preloadImage(src) {
+  if (!src || typeof Image === 'undefined') return;
+  const image = new Image();
+  image.src = src;
+}
+
+function setCatMood(mood, options = {}) {
+  if (!elements.catImage) return;
+  const asset = mood === 'hug' ? CAT_ASSETS.hug : CAT_ASSETS.idle;
+  const transform = options.transform ?? (mood === 'hug' ? 'translateY(-4px) scale(1.02)' : 'translateY(0)');
+  const changedPrimary = elements.catImage.dataset.primarySrc !== asset.primary;
+
+  elements.catImage.dataset.fallbackSrc = asset.fallback;
+  elements.catImage.alt = asset.alt;
+  elements.catImage.style.transform = transform;
+
+  if (changedPrimary || options.forceReload) {
+    elements.catImage.dataset.primarySrc = asset.primary;
+    elements.catImage.dataset.usingFallback = 'false';
+    elements.catImage.src = asset.primary;
+  }
+}
+
+attachImageFallback(elements.catImage);
+const modalCatImage = elements.hugModal?.querySelector('.modal__image');
+if (modalCatImage) {
+  modalCatImage.dataset.fallbackSrc = CAT_ASSETS.hug.fallback;
+  attachImageFallback(modalCatImage);
+}
+
+setCatMood('idle', { forceReload: true });
+preloadImage(CAT_ASSETS.hug.primary);
 
 function hydrateStateFromStorage() {
   const storedProgress = Number(localStorage.getItem(STORAGE_KEYS.progress));
@@ -115,8 +172,10 @@ function updateMeter() {
   elements.meter.setAttribute('aria-valuenow', String(capped));
   elements.meter.classList.toggle('meter--full', capped >= 100);
   elements.app.dataset.state = capped >= 100 ? 'complete' : 'active';
-  elements.catImage.style.transform = capped >= 100 ? 'translateY(-4px) scale(1.02)' : 'translateY(0)';
-  elements.catImage.src = capped >= 100 ? 'assets/cat/cat_hug.svg' : 'assets/cat/cat_idle.svg';
+  const transform = capped >= 100
+    ? (state.isCompleting ? 'translateY(-6px) scale(1.05)' : 'translateY(-4px) scale(1.02)')
+    : 'translateY(0)';
+  setCatMood(capped >= 100 ? 'hug' : 'idle', { transform });
   elements.meter.parentElement.querySelector('.meter__glow').style.opacity = capped > 0 ? 1 : 0;
 }
 
@@ -229,8 +288,7 @@ function triggerCompletion() {
   const hugButton = createCTAButton('Peluk Aku', () => openDialog(elements.hugModal));
   const talkButton = createCTAButton('Kita Ngobrol Yuk?', () => openDialog(elements.talkDialog));
   elements.ctaGroup.append(hugButton, talkButton);
-  elements.catImage.src = 'assets/cat/cat_hug.svg';
-  elements.catImage.style.transform = 'translateY(-6px) scale(1.05)';
+  setCatMood('hug', { transform: 'translateY(-6px) scale(1.05)', forceReload: true });
   persistState();
 }
 
@@ -255,6 +313,10 @@ function openDialog(dialog) {
     }, { once: true });
     const trigger = document.activeElement;
     if (trigger) trigger.setAttribute('data-active-dialog', 'true');
+    if (dialog === elements.hugModal && modalCatImage) {
+      modalCatImage.dataset.usingFallback = 'false';
+      modalCatImage.src = CAT_ASSETS.hug.primary;
+    }
     dialog.showModal();
     trapFocus(dialog);
   }
@@ -296,8 +358,7 @@ function resetProgress(confirmReset = true) {
   state.lastInteraction = 0;
   elements.messageList.innerHTML = '';
   elements.completion.hidden = true;
-  elements.catImage.src = 'assets/cat/cat_idle.svg';
-  elements.catImage.style.transform = 'translateY(0)';
+  setCatMood('idle');
   updateMeter();
   localStorage.removeItem(STORAGE_KEYS.progress);
   localStorage.removeItem(STORAGE_KEYS.pointer);

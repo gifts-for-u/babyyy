@@ -42,6 +42,19 @@ const STEP_VALUE = totalMessages ? Math.ceil(100 / totalMessages) : 100;
 
 const HEART_URL = 'https://www.svgrepo.com/show/535436/heart.svg';
 
+const CAT_ASSETS = {
+  idle: {
+    primary: '/assets/cat/cat-8.png',
+    fallback: '/assets/cat/cat_idle.svg',
+    alt: 'Kucing pastel dengan ekspresi sedih namun berharap'
+  },
+  hug: {
+    primary: '/assets/cat/cat-9.png',
+    fallback: '/assets/cat/cat_hug.svg',
+    alt: 'Kucing pastel membuka tangan untuk peluk'
+  }
+} as const;
+
 const labelByCategory: Record<Category, string> = {
   acknowledgements: 'Mengakui Perasaanmu',
   accountability: 'Aku Bertanggung Jawab',
@@ -94,18 +107,42 @@ export function ApologyMeter({ value, onFill, onComplete }: { value: number; onF
   );
 }
 
-export function CatCharacter({ mood }: { mood: 'sad' | 'hopeful' | 'hug' }) {
-  const src = mood === 'hug' ? '/assets/cat/cat_hug.svg' : '/assets/cat/cat_idle.svg';
-  const alt = mood === 'hug'
-    ? 'Kucing pastel membuka tangan untuk peluk'
-    : 'Kucing pastel dengan ekspresi sedih namun berharap';
+export function CatCharacter({ mood, celebrate = false }: { mood: 'sad' | 'hopeful' | 'hug'; celebrate?: boolean }) {
+  const assetKey = mood === 'hug' ? 'hug' : 'idle';
+  const asset = CAT_ASSETS[assetKey];
+  const [source, setSource] = useState(asset.primary);
+  const fallbackUsed = useRef(false);
+
+  useEffect(() => {
+    fallbackUsed.current = false;
+    setSource(asset.primary);
+  }, [asset.primary]);
+
+  useEffect(() => {
+    const preloader = new Image();
+    preloader.src = CAT_ASSETS.hug.primary;
+    return () => {
+      preloader.src = '';
+    };
+  }, []);
+
+  const handleError = useCallback(() => {
+    if (fallbackUsed.current) return;
+    fallbackUsed.current = true;
+    setSource(asset.fallback);
+  }, [asset.fallback]);
+
   return (
-    <div className="relative mx-auto w-48 sm:w-60">
+    <div className="relative mx-auto aspect-square w-48 sm:w-60">
       <img
-        src={src}
-        alt={alt}
-        className="w-full drop-shadow-xl transition-transform duration-700"
-        style={{ transform: mood === 'hug' ? 'translateY(-4px) scale(1.04)' : 'translateY(0)' }}
+        src={source}
+        onError={handleError}
+        alt={asset.alt}
+        width={512}
+        height={512}
+        className="h-full w-full object-contain drop-shadow-xl transition-transform duration-700"
+        style={{ transform: mood === 'hug' ? (celebrate ? 'translateY(-6px) scale(1.05)' : 'translateY(-4px) scale(1.04)') : 'translateY(0)' }}
+        decoding="async"
       />
       <div className="pointer-events-none absolute -inset-6 rounded-full bg-white/40 opacity-0 transition-opacity duration-700" />
     </div>
@@ -159,6 +196,20 @@ export function CTAGroup({ onHug, onTalk }: { onHug: () => void; onTalk: () => v
 
 export function ModalHug({ open, onClose }: { open: boolean; onClose: () => void }) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const [hugSource, setHugSource] = useState(CAT_ASSETS.hug.primary);
+  const fallbackUsed = useRef(false);
+
+  useEffect(() => {
+    if (!open) return;
+    fallbackUsed.current = false;
+    setHugSource(CAT_ASSETS.hug.primary);
+  }, [open]);
+
+  const handleImageError = useCallback(() => {
+    if (fallbackUsed.current) return;
+    fallbackUsed.current = true;
+    setHugSource(CAT_ASSETS.hug.fallback);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -204,7 +255,15 @@ export function ModalHug({ open, onClose }: { open: boolean; onClose: () => void
     >
       <div className="glass-card w-full max-w-md space-y-4 p-6 text-center">
         <h2 id="hug-title" className="text-2xl font-semibold text-[#432946]">Pelukan dari Si Kucing</h2>
-        <img src="/assets/cat/cat_hug.svg" alt="Kucing siap memeluk" className="mx-auto w-40" />
+        <img
+          src={hugSource}
+          onError={handleImageError}
+          alt={CAT_ASSETS.hug.alt}
+          width={512}
+          height={512}
+          className="mx-auto aspect-square w-40 object-contain"
+          decoding="async"
+        />
         <p className="text-[#432946]">
           Bayangin aku peluk kamu erat sekarang, hangat dan penuh sabar sampai kamu siap bicara lagi.
         </p>
@@ -453,6 +512,7 @@ export default function App() {
   }, [hugOpen, talkOpen]);
 
   const catMood: 'sad' | 'hopeful' | 'hug' = progress >= 100 ? 'hug' : displayed.length > 0 ? 'hopeful' : 'sad';
+  const catCelebrating = catMood === 'hug' && isComplete;
 
   return (
     <div className="relative mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-8 px-5 py-10">
@@ -473,7 +533,7 @@ export default function App() {
         </div>
       )}
       <header className="glass-card flex flex-col gap-6 p-6 sm:flex-row sm:items-center">
-        <CatCharacter mood={catMood} />
+        <CatCharacter mood={catMood} celebrate={catCelebrating} />
         <div className="space-y-3 text-center sm:text-left">
           <h1 className="text-3xl font-semibold text-[#432946]">Meteran Maaf</h1>
           <p className="text-base text-[#6c4c70]">
