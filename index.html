@@ -110,10 +110,7 @@
           decoding="async"
           loading="lazy"
         />
-        <p>
-          Bayangin aku bener-bener peluk kamu sekarang, hangat dan nggak akan
-          lepas sampai kamu siap.
-        </p>
+        <p>Peyukkk kamuuu, nanti kita peyukk yang lamaa yaaa. sayanggg kamuuu😘❣️❣️❣️</p>
         <button class="button" value="close">Tutup</button>
       </form>
     </dialog>
@@ -125,9 +122,7 @@
         <div class="dialog-options">
           <button class="button" value="Nanti malam">Nanti malam</button>
           <button class="button" value="Besok sore">Besok sore</button>
-          <button class="button" value="Pilih waktu lain">
-            Pilih waktu lain
-          </button>
+          <button class="button" value="Pilih waktu lain">Pilih waktu lain</button>
         </div>
         <button class="button button--subtle" value="close">Tutup</button>
       </form>
@@ -140,14 +135,25 @@
     </template>
 
     <template id="heart-template">
-      <img
-        src="https://www.svgrepo.com/show/535436/heart.svg"
-        alt=""
-        class="heart"
-        aria-hidden="true"
-      />
+      <img src="https://www.svgrepo.com/show/535436/heart.svg" alt="" class="heart" aria-hidden="true" />
     </template>
 
-    <script type="module" src="app.js"></script>
+    <script type="module">
+      const version = `${Date.now()}`;
+      const html = document.documentElement;
+      html.dataset.buildVersion = version;
+
+      const bustLinks = document.querySelectorAll('link[data-cache-bust="styles"]');
+      bustLinks.forEach((link) => {
+        const baseHref = link.getAttribute('data-base-href') || link.getAttribute('href');
+        if (baseHref) {
+          link.setAttribute('href', `${baseHref}?v=${version}`);
+        }
+      });
+
+      import(`./app.js?v=${version}`).catch((error) => {
+        console.error('Gagal memuat aplikasi', error);
+      });
+    </script>
   </body>
 </html>
