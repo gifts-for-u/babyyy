@@ -1,0 +1,551 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { messages } from '../messages';
+
+const STORAGE_KEYS = {
+  progress: 'apology_progress',
+  pointer: 'apology_pointer'
+};
+
+const SHOULD_PERSIST_PROGRESS = false as const;
+
+const FILL_BUTTON_LABELS = [
+  'maaff babyy',
+  'maaff sayangg',
+  'aku minta maaff',
+  'maaff cantik akuu',
+  'mamas minta maaff',
+  'maaff yaa cantikk'
+] as const;
+
+const getRandomFillLabel = (exclude?: string) => {
+  const pool = FILL_BUTTON_LABELS.filter((label) => label !== exclude);
+  const source = pool.length > 0 ? pool : [...FILL_BUTTON_LABELS];
+  return source[Math.floor(Math.random() * source.length)];
+};
+
+type Category = keyof typeof messages;
+type DisplayCategory = Exclude<Category, 'final'>;
+type SequenceEntry = {
+  category: DisplayCategory;
+  index: number;
+  text: string;
+};
+
+type Heart = {
+  id: number;
+  left: number;
+  size: number;
+  duration: number;
+};
+
+const useReducedMotion = () => {
+  const [prefers, setPrefers] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefers(query.matches);
+    const handler = (event: MediaQueryListEvent) => setPrefers(event.matches);
+    query.addEventListener('change', handler);
+    return () => query.removeEventListener('change', handler);
+  }, []);
+  return prefers;
+};
+
+const messageCategories = Object.keys(messages)
+  .filter((key) => key !== 'final')
+  .map((key) => key as DisplayCategory);
+
+const messageSequence: SequenceEntry[] = messageCategories.flatMap((category) => {
+  const bucket = Array.isArray(messages[category]) ? messages[category] : [];
+  return bucket.map((text, index) => ({ category, index, text }));
+});
+
+const totalMessages = messageSequence.length;
+const STEP_VALUE = totalMessages ? Math.ceil(100 / totalMessages) : 100;
+
+const HEART_URL = 'https://www.svgrepo.com/show/535436/heart.svg';
+const EMOJI_CONFETTI_SYMBOLS = ['😘', '❣️'] as const;
+
+const CAT_ASSETS = {
+  idle: {
+    primary: '/assets/cat/cat-8.png',
+    fallback: '/assets/cat/cat_idle.svg',
+    alt: 'Kucing pastel dengan ekspresi sedih namun berharap'
+  },
+  hug: {
+    primary: '/assets/cat/cat-9.png',
+    fallback: '/assets/cat/cat_hug.svg',
+    alt: 'Kucing pastel membuka tangan untuk peluk'
+  }
+} as const;
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+let activeEmojiConfetti: HTMLDivElement | null = null;
+let emojiConfettiTimeout: number | undefined;
+
+const launchEmojiConfetti = (trigger?: HTMLElement | null) => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) return;
+
+  if (emojiConfettiTimeout) {
+    window.clearTimeout(emojiConfettiTimeout);
+    emojiConfettiTimeout = undefined;
+  }
+  if (activeEmojiConfetti) {
+    activeEmojiConfetti.remove();
+    activeEmojiConfetti = null;
+  }
+
+  const rect = trigger?.getBoundingClientRect?.();
+  const container = document.createElement('div');
+  container.className = 'emoji-confetti';
+  const originX = rect ? rect.left + rect.width / 2 + window.scrollX : window.innerWidth / 2 + window.scrollX;
+  const originY = rect ? rect.top + rect.height / 2 + window.scrollY : window.innerHeight / 2 + window.scrollY;
+  container.style.left = `${originX}px`;
+  container.style.top = `${originY}px`;
+  container.style.transform = 'translate(-50%, -50%)';
+
+  const totalPieces = 26;
+  for (let i = 0; i < totalPieces; i += 1) {
+    const piece = document.createElement('span');
+    piece.className = 'emoji-confetti__piece';
+    piece.textContent = EMOJI_CONFETTI_SYMBOLS[Math.floor(Math.random() * EMOJI_CONFETTI_SYMBOLS.length)];
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 90 + Math.random() * 80;
+    const duration = 900 + Math.random() * 500;
+    piece.style.setProperty('--confetti-x', `${Math.cos(angle) * distance}px`);
+    piece.style.setProperty('--confetti-y', `${Math.sin(angle) * distance}px`);
+    piece.style.setProperty('--confetti-rotate', `${(Math.random() * 120 - 60).toFixed(2)}deg`);
+    piece.style.animationDuration = `${duration}ms`;
+    piece.style.animationDelay = `${Math.random() * 120}ms`;
+    container.append(piece);
+  }
+
+  document.body.append(container);
+  activeEmojiConfetti = container;
+  requestAnimationFrame(() => container.classList.add('emoji-confetti--active'));
+  emojiConfettiTimeout = window.setTimeout(() => {
+    container.remove();
+    if (activeEmojiConfetti === container) {
+      activeEmojiConfetti = null;
+      emojiConfettiTimeout = undefined;
+    }
+  }, 1600);
+};
+
+export function ApologyMeter({ value, onFill, onComplete }: { value: number; onFill: () => void; onComplete?: () => void }) {
+  const [fillLabel, setFillLabel] = useState(() => getRandomFillLabel());
+
+  const handleFillClick = useCallback(() => {
+    setFillLabel((current) => getRandomFillLabel(current));
+    onFill();
+  }, [onFill]);
+
+  useEffect(() => {
+    if (value >= 100) {
+      onComplete?.();
+    }
+  }, [value, onComplete]);
+  return (
+    <section className="glass-card mb-[2vh] p-6 space-y-4" aria-labelledby="meter-label">
+      <div className="flex items-center justify-between gap-4">
+        <h2 id="meter-label" className="text-xl font-semibold text-[#432946]">Apology Meter</h2>
+        <span className="text-lg font-semibold" aria-live="polite">{value}%</span>
+      </div>
+      <div
+        className="relative h-3.5 w-full overflow-hidden rounded-full bg-white/60"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={value}
+        aria-describedby="meter-label"
+      >
+        <div
+          className="absolute inset-0 rounded-full bg-gradient-to-r from-pink-500 via-pink-400 to-pink-300 transition-[width] duration-500"
+          style={{ width: `${value}%` }}
+        />
+        <div className="pointer-events-none absolute -inset-2 rounded-full bg-pink-200/60 blur-xl" aria-hidden />
+      </div>
+      <button type="button" className="button-primary" onClick={handleFillClick} aria-describedby="fill-hint">
+        {fillLabel}
+      </button>
+      <p id="fill-hint" className="text-sm text-[#6c4c70]">
+        Tap atau klik ruang kosong juga bisa untuk maju satu langkah.
+      </p>
+    </section>
+  );
+}
+
+export function CatCharacter({ mood, celebrate = false }: { mood: 'sad' | 'hopeful' | 'hug'; celebrate?: boolean }) {
+  const assetKey = mood === 'hug' ? 'hug' : 'idle';
+  const asset = CAT_ASSETS[assetKey];
+  const [source, setSource] = useState(asset.primary);
+  const fallbackUsed = useRef(false);
+
+  useEffect(() => {
+    fallbackUsed.current = false;
+    setSource(asset.primary);
+  }, [asset.primary]);
+
+  useEffect(() => {
+    const preloader = new Image();
+    preloader.src = CAT_ASSETS.hug.primary;
+    return () => {
+      preloader.src = '';
+    };
+  }, []);
+
+  const handleError = useCallback(() => {
+    if (fallbackUsed.current) return;
+    fallbackUsed.current = true;
+    setSource(asset.fallback);
+  }, [asset.fallback]);
+
+  return (
+    <div className="relative mx-auto aspect-square w-48 sm:w-60">
+      <img
+        src={source}
+        onError={handleError}
+        alt={asset.alt}
+        width={512}
+        height={512}
+        className="h-full w-full object-contain drop-shadow-xl transition-transform duration-700"
+        style={{ transform: mood === 'hug' ? (celebrate ? 'translateY(-6px) scale(1.05)' : 'translateY(-4px) scale(1.04)') : 'translateY(0)' }}
+        decoding="async"
+      />
+      <div className="pointer-events-none absolute -inset-6 rounded-full bg-white/40 opacity-0 transition-opacity duration-700" />
+    </div>
+  );
+}
+
+export function MessageCard({ text }: { text: string }) {
+  return (
+    <article className="glass-card border border-pink-200/40 p-5 shadow-lg shadow-pink-200/50 animate-[message-in_350ms_ease-out_forwards]">
+      <p className="text-base text-[#432946]">{text}</p>
+    </article>
+  );
+}
+
+export function FloatingHearts({ hearts }: { hearts: Heart[] }) {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {hearts.map((heart) => (
+        <img
+          key={heart.id}
+          src={HEART_URL}
+          aria-hidden
+          className="absolute opacity-0 animate-[float-heart_1s_ease-out_forwards] drop-shadow-lg"
+          style={{
+            left: `${heart.left}%`,
+            bottom: '12%',
+            width: heart.size,
+            animationDuration: `${heart.duration}ms`
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function CTAGroup({ onHug }: { onHug: () => void }) {
+  return (
+    <div className="flex flex-col items-center gap-[5px] sm:flex-row sm:justify-center">
+      <button type="button" className="button-primary" onClick={onHug}>
+        Peluk Aku
+      </button>
+      <button
+        type="button"
+        className="button-primary"
+        onClick={(event) => launchEmojiConfetti(event.currentTarget)}
+      >
+        Mwaaa😘❣️
+      </button>
+    </div>
+  );
+}
+
+export function ModalHug({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const [hugSource, setHugSource] = useState(CAT_ASSETS.hug.primary);
+  const fallbackUsed = useRef(false);
+
+  useEffect(() => {
+    if (!open) return;
+    fallbackUsed.current = false;
+    setHugSource(CAT_ASSETS.hug.primary);
+  }, [open]);
+
+  const handleImageError = useCallback(() => {
+    if (fallbackUsed.current) return;
+    fallbackUsed.current = true;
+    setHugSource(CAT_ASSETS.hug.fallback);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const dialog = dialogRef.current;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+      if (event.key === 'Tab' && dialog) {
+        const focusable = dialog.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    const prev = document.activeElement as HTMLElement | null;
+    const timer = window.setTimeout(() => dialog?.querySelector<HTMLElement>('button')?.focus(), 0);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('keydown', handleKey);
+      prev?.focus();
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="hug-title"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-6"
+    >
+      <div className="glass-card w-full max-w-md space-y-4 p-6 text-center">
+        <h2 id="hug-title" className="text-2xl font-semibold text-[#432946]">Pelukan dari Si Kucing</h2>
+        <img
+          src={hugSource}
+          onError={handleImageError}
+          alt={CAT_ASSETS.hug.alt}
+          width={512}
+          height={512}
+          className="mx-auto aspect-square w-40 object-contain"
+          decoding="async"
+        />
+        <p className="text-[#432946]">
+          Peyukkk kamuuu, nanti kita peyukk yang lamaa yaaa. sayanggg kamuuu😘❣️❣️❣️
+        </p>
+        <button type="button" className="button-secondary" onClick={onClose}>
+          Tutup
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [progress, setProgress] = useState(0);
+  const [messageIndex, setMessageIndex] = useState(0);
+  const [displayed, setDisplayed] = useState<SequenceEntry[]>([]);
+  const [isComplete, setIsComplete] = useState(false);
+  const [hearts, setHearts] = useState<Heart[]>([]);
+  const [hugOpen, setHugOpen] = useState(false);
+  const [introVisible, setIntroVisible] = useState(true);
+  const throttleRef = useRef(0);
+  const prefersReducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!SHOULD_PERSIST_PROGRESS) {
+      localStorage.removeItem(STORAGE_KEYS.progress);
+      localStorage.removeItem(STORAGE_KEYS.pointer);
+      return;
+    }
+    const storedProgress = Number(localStorage.getItem(STORAGE_KEYS.progress));
+    const storedPointer = localStorage.getItem(STORAGE_KEYS.pointer);
+    if (!Number.isNaN(storedProgress)) {
+      setProgress(clamp(storedProgress, 0, 100));
+      if (storedProgress > 0) {
+        setIntroVisible(false);
+      }
+    }
+    if (storedPointer) {
+      try {
+        const parsed = JSON.parse(storedPointer) as { currentMessageIndex?: number };
+        const pointer = parsed.currentMessageIndex ?? 0;
+        setMessageIndex(pointer);
+        setDisplayed(messageSequence.slice(0, pointer));
+        if (storedProgress >= 100) {
+          setIsComplete(true);
+        }
+      } catch (error) {
+        console.warn('Gagal memuat progres', error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!SHOULD_PERSIST_PROGRESS) {
+      return;
+    }
+    const payload = {
+      currentMessageIndex: messageIndex
+    };
+    localStorage.setItem(STORAGE_KEYS.progress, String(progress));
+    localStorage.setItem(STORAGE_KEYS.pointer, JSON.stringify(payload));
+  }, [messageIndex, progress]);
+
+  const nextMessage = useCallback((): SequenceEntry | null => {
+    if (messageIndex >= messageSequence.length) {
+      return null;
+    }
+    const entry = messageSequence[messageIndex];
+    setMessageIndex(messageIndex + 1);
+    return entry;
+  }, [messageIndex]);
+
+  const handleFill = useCallback(() => {
+    if (introVisible) return;
+    const now = Date.now();
+    if (now - throttleRef.current < 500) return;
+    throttleRef.current = now;
+
+    if (progress >= 100) {
+      setIsComplete(true);
+      return;
+    }
+
+    const entry = nextMessage();
+    if (!entry) {
+      setProgress(100);
+      setIsComplete(true);
+      return;
+    }
+
+    setProgress((prev) => clamp(prev + STEP_VALUE, 0, 100));
+    setDisplayed((prev) => [...prev, entry]);
+
+    if (!prefersReducedMotion) {
+      setHearts((prev) => {
+        const count = Math.floor(Math.random() * 5) + 2;
+        const newHearts: Heart[] = Array.from({ length: count }, (_, index) => ({
+          id: Date.now() + index,
+          left: Math.random() * 90 + 5,
+          size: 24 + Math.random() * 18,
+          duration: 900 + Math.random() * 500
+        }));
+        newHearts.forEach((heart) => {
+          window.setTimeout(() => {
+            setHearts((current) => current.filter((item) => item.id !== heart.id));
+          }, heart.duration + 200);
+        });
+        return [...prev, ...newHearts];
+      });
+    }
+
+    if (navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+  }, [introVisible, nextMessage, prefersReducedMotion, progress]);
+
+  useEffect(() => {
+    if (progress >= 100) {
+      setIsComplete(true);
+    }
+  }, [progress]);
+
+  const reset = useCallback(() => {
+    setProgress(0);
+    setMessageIndex(0);
+    setDisplayed([]);
+    setIsComplete(false);
+    setHearts([]);
+    localStorage.removeItem(STORAGE_KEYS.progress);
+    localStorage.removeItem(STORAGE_KEYS.pointer);
+  }, []);
+
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      if (introVisible) return;
+      const target = event.target as HTMLElement;
+      if (target.closest('button')) return;
+      handleFill();
+    };
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [handleFill, introVisible]);
+
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && hugOpen) {
+        setHugOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [hugOpen]);
+
+  const catMood: 'sad' | 'hopeful' | 'hug' = progress >= 100 ? 'hug' : displayed.length > 0 ? 'hopeful' : 'sad';
+  const catCelebrating = catMood === 'hug' && isComplete;
+
+  return (
+    <div className="relative mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-8 px-5 py-10">
+      <FloatingHearts hearts={hearts} />
+      {introVisible && (
+        <div className="fixed inset-0 z-40 grid place-items-center bg-black/70 p-6 text-center text-white transition-opacity">
+          <div className="w-full max-w-lg space-y-6 rounded-3xl bg-white/10 p-8 backdrop-blur-lg">
+            <h1 className="text-2xl font-semibold">Aku tau kamu lagi kesal… dan aku paham kenapa.</h1>
+            <p className="text-base text-white/80">Tap atau klik untuk mulai. Aku janji dengerin sepenuh hati.</p>
+            <button
+              type="button"
+              className="button-soft mx-auto"
+              onClick={() => setIntroVisible(false)}
+            >
+              Mulai Pelan-Pelan
+            </button>
+          </div>
+        </div>
+      )}
+      <header className="glass-card flex flex-col gap-6 p-6 sm:flex-row sm:items-center">
+        <CatCharacter mood={catMood} celebrate={catCelebrating} />
+        <div className="space-y-3 text-center sm:text-left">
+          <h1 className="text-3xl font-semibold text-[#432946]">Meteran Maaf</h1>
+          <p className="text-base text-[#6c4c70]">
+            Aku tau kamu lagi kesal… aku pengen denger dan bener-bener bertanggung jawab.
+          </p>
+        </div>
+      </header>
+
+      <ApologyMeter value={progress} onFill={handleFill} onComplete={() => setIsComplete(true)} />
+
+      <section aria-live="polite" aria-label="Pesan permintaan maaf" className="space-y-4">
+        {displayed.map((item) => (
+          <MessageCard key={`${item.category}-${item.index}`} text={item.text} />
+        ))}
+      </section>
+
+      {isComplete && (
+        <section className="glass-card mt-[2vh] space-y-4 p-6 text-center" aria-live="polite">
+          <p className="text-lg text-[#432946]">
+            {messages.final?.[0] ?? 'Aku ingin memperbaiki semuanya dengan kamu.'}
+          </p>
+          <CTAGroup onHug={() => setHugOpen(true)} />
+        </section>
+      )}
+
+      <footer className="pb-10 text-center text-sm text-[#6c4c70]">
+        <p>Kalau kamu butuh waktu, aku siap menunggu kapan pun.</p>
+        <button type="button" className="mt-3 underline decoration-pink-400 decoration-2" onClick={reset}>
+          Reset
+        </button>
+      </footer>
+
+      <ModalHug open={hugOpen} onClose={() => setHugOpen(false)} />
+    </div>
+  );
+}
+
