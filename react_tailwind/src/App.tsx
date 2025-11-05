@@ -8,6 +8,8 @@ const STORAGE_KEYS = {
   pointer: 'apology_pointer'
 };
 
+const SHOULD_PERSIST_PROGRESS = false as const;
+
 type Category = keyof typeof messages;
 
 type DisplayedPointer = {
@@ -359,6 +361,11 @@ export default function App() {
   const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
+    if (!SHOULD_PERSIST_PROGRESS) {
+      localStorage.removeItem(STORAGE_KEYS.progress);
+      localStorage.removeItem(STORAGE_KEYS.pointer);
+      return;
+    }
     const storedProgress = Number(localStorage.getItem(STORAGE_KEYS.progress));
     const storedPointer = localStorage.getItem(STORAGE_KEYS.pointer);
     if (!Number.isNaN(storedProgress)) {
@@ -390,6 +397,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!SHOULD_PERSIST_PROGRESS) {
+      return;
+    }
     const payload = {
       currentCategoryIndex,
       currentMessageIndices: Object.entries(messagePointers) as [Category, number][],

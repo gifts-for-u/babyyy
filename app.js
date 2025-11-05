@@ -5,6 +5,8 @@ const STORAGE_KEYS = {
   pointer: 'apology_pointer'
 };
 
+const SHOULD_PERSIST_PROGRESS = false;
+
 const state = {
   progress: 0,
   currentCategoryIndex: 0,
@@ -101,7 +103,18 @@ if (modalCatImage) {
 setCatMood('idle', { forceReload: true });
 preloadImage(CAT_ASSETS.hug.primary);
 
+function clearStoredProgress() {
+  localStorage.removeItem(STORAGE_KEYS.progress);
+  localStorage.removeItem(STORAGE_KEYS.pointer);
+}
+
 function hydrateStateFromStorage() {
+  if (!SHOULD_PERSIST_PROGRESS) {
+    clearStoredProgress();
+    updateMeter();
+    return;
+  }
+
   const storedProgress = Number(localStorage.getItem(STORAGE_KEYS.progress));
   const storedPointer = localStorage.getItem(STORAGE_KEYS.pointer);
 
@@ -134,6 +147,9 @@ function hydrateStateFromStorage() {
 }
 
 function persistState() {
+  if (!SHOULD_PERSIST_PROGRESS) {
+    return;
+  }
   const payload = {
     currentCategoryIndex: state.currentCategoryIndex,
     currentMessageIndices: Array.from(state.currentMessageIndices.entries()),
@@ -360,8 +376,7 @@ function resetProgress(confirmReset = true) {
   elements.completion.hidden = true;
   setCatMood('idle');
   updateMeter();
-  localStorage.removeItem(STORAGE_KEYS.progress);
-  localStorage.removeItem(STORAGE_KEYS.pointer);
+  clearStoredProgress();
 }
 
 function setupIntro() {
