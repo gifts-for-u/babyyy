@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --romantic-gradient: radial-gradient(circle at top, rgba(255, 236, 243, 0.85), rgba(255, 222, 235, 0.95));
+  --glow-pink: rgba(244, 114, 182, 0.45);
+}
+
+@layer base {
+  body {
+    @apply bg-[#fff5fa] text-[#432946] min-h-screen font-['DM_Sans',_Inter,_system-ui,_sans-serif];
+    background-image: var(--romantic-gradient);
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.15' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+  }
+
+  @keyframes message-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes float-heart {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(0.9) rotate(-6deg);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-80px) scale(1.05) rotate(6deg);
+    }
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-white/75 backdrop-blur-sm shadow-lg shadow-pink-200/50 rounded-[28px];
+  }
+
+  .button-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-gradient-to-r from-pink-600 via-pink-500 to-pink-400 px-6 py-3 font-semibold text-white shadow-lg shadow-pink-300/60 transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500 active:scale-95;
+  }
+
+  .button-secondary {
+    @apply inline-flex items-center justify-center rounded-full bg-pink-100 px-5 py-3 font-semibold text-pink-700 shadow-inner transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-400 active:scale-95;
+  }
+
+  .button-soft {
+    @apply inline-flex items-center justify-center rounded-full border-2 border-pink-400/80 bg-[#fff4ea] px-6 py-3 font-semibold text-pink-500 shadow-lg shadow-pink-200/50 transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-400 active:scale-95;
+  }
+}
