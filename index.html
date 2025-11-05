@@ -53,39 +53,16 @@
         <section class="meter-section" aria-labelledby="meter-label">
           <div class="meter-header">
             <h2 id="meter-label">Apology Meter</h2>
-            <span class="meter-value" id="meter-value" aria-live="polite"
-              >0%</span
-            >
+            <span class="meter-value" id="meter-value" aria-live="polite">0%</span>
           </div>
-          <div
-            class="meter"
-            role="progressbar"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-valuenow="0"
-            aria-describedby="meter-label"
-          >
+          <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-describedby="meter-label">
             <div class="meter__fill" id="meter-fill"></div>
             <div class="meter__glow"></div>
           </div>
-          <button
-            class="button button--primary"
-            id="fill-button"
-            type="button"
-            aria-describedby="fill-hint"
-          >
-            Isi dengan Usaha
-          </button>
-          <p class="hint" id="fill-hint">
-            Kamu juga bisa tap di ruang kosong untuk maju satu langkah.
-          </p>
+          <button class="button button--primary" id="fill-button" type="button" aria-describedby="fill-hint">Isi dengan Usaha</button>
+          <p class="hint" id="fill-hint">Kamu juga bisa tap di ruang kosong untuk maju satu langkah.</p>
         </section>
-        <section
-          class="messages"
-          aria-live="polite"
-          aria-label="Pesan permintaan maaf"
-          id="message-list"
-        ></section>
+        <section class="messages" aria-live="polite" aria-label="Pesan permintaan maaf" id="message-list"></section>
         <section class="completion" id="completion" hidden>
           <p class="completion__text" id="completion-text"></p>
           <div class="cta-group" id="cta-group"></div>
@@ -112,19 +89,6 @@
         />
         <p>Peyukkk kamuuu, nanti kita peyukk yang lamaa yaaa. sayanggg kamuuu😘❣️❣️❣️</p>
         <button class="button" value="close">Tutup</button>
-      </form>
-    </dialog>
-
-    <dialog id="talk-dialog" aria-labelledby="talk-title">
-      <form method="dialog">
-        <h2 id="talk-title">Kapan kita ngobrol?</h2>
-        <p>Aku siap dengerin penuh hati.</p>
-        <div class="dialog-options">
-          <button class="button" value="Nanti malam">Nanti malam</button>
-          <button class="button" value="Besok sore">Besok sore</button>
-          <button class="button" value="Pilih waktu lain">Pilih waktu lain</button>
-        </div>
-        <button class="button button--subtle" value="close">Tutup</button>
       </form>
     </dialog>
 

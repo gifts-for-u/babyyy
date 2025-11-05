@@ -16,7 +16,7 @@ async function bootstrap() {
   }
 }
 
-function initializeApp({ messages, categoryOrderCycle }) {
+function initializeApp({ messages }) {
   const STORAGE_KEYS = {
     progress: 'apology_progress',
     pointer: 'apology_pointer'
@@ -38,11 +38,15 @@ function initializeApp({ messages, categoryOrderCycle }) {
   let activeEmojiConfetti;
   let emojiConfettiTimeout;
 
+  const messageCategories = Object.keys(messages).filter((key) => key !== 'final');
+  const messageQueue = messageCategories.flatMap((category) => {
+    const bucket = Array.isArray(messages[category]) ? messages[category] : [];
+    return bucket.map((text, index) => ({ category, index, text }));
+  });
+
   const state = {
     progress: 0,
-    currentCategoryIndex: 0,
-    currentMessageIndices: new Map(),
-    displayedHistory: [],
+    currentMessageIndex: 0,
     lastInteraction: 0,
     isCompleting: false
   };
@@ -61,7 +65,6 @@ function initializeApp({ messages, categoryOrderCycle }) {
     ctaGroup: document.getElementById('cta-group'),
     resetButton: document.getElementById('reset-progress'),
     hugModal: document.getElementById('hug-modal'),
-    talkDialog: document.getElementById('talk-dialog'),
     catImage: document.getElementById('cat-image'),
     heartTemplate: document.getElementById('heart-template'),
     messageTemplate: document.getElementById('message-template')
@@ -80,9 +83,7 @@ function initializeApp({ messages, categoryOrderCycle }) {
     }
   };
 
-  const totalMessages = categoryOrderCycle.reduce((total, category) => {
-    return total + (messages[category]?.length ?? 0);
-  }, 0);
+  const totalMessages = messageQueue.length;
   const stepValue = totalMessages ? Math.ceil(100 / totalMessages) : 100;
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -219,15 +220,14 @@ function initializeApp({ messages, categoryOrderCycle }) {
     if (storedPointer) {
       try {
         const parsed = JSON.parse(storedPointer);
-        state.currentCategoryIndex = parsed.currentCategoryIndex ?? 0;
-        state.currentMessageIndices = new Map(parsed.currentMessageIndices ?? []);
-        state.displayedHistory = parsed.displayed ?? [];
-        state.displayedHistory.forEach(({ category, index }) => {
-          const text = messages[category]?.[index];
-          if (text) {
-            renderMessage(category, text, false);
+        state.currentMessageIndex = parsed.currentMessageIndex ?? 0;
+        const displayedCount = Math.min(state.currentMessageIndex, messageQueue.length);
+        for (let i = 0; i < displayedCount; i += 1) {
+          const entry = messageQueue[i];
+          if (entry) {
+            renderMessage(entry.category, entry.text, false);
           }
-        });
+        }
         if (state.progress >= 100) {
           triggerCompletion();
         }
@@ -245,9 +245,7 @@ function initializeApp({ messages, categoryOrderCycle }) {
       return;
     }
     const payload = {
-      currentCategoryIndex: state.currentCategoryIndex,
-      currentMessageIndices: Array.from(state.currentMessageIndices.entries()),
-      displayed: state.displayedHistory
+      currentMessageIndex: state.currentMessageIndex
     };
     localStorage.setItem(STORAGE_KEYS.progress, String(state.progress));
     localStorage.setItem(STORAGE_KEYS.pointer, JSON.stringify(payload));
@@ -255,24 +253,12 @@ function initializeApp({ messages, categoryOrderCycle }) {
 
   function nextMessage() {
     if (state.isCompleting) return null;
-    const displayed = [];
-
-    for (let attempt = 0; attempt < categoryOrderCycle.length; attempt += 1) {
-      const categoryIndex = (state.currentCategoryIndex + attempt) % categoryOrderCycle.length;
-      const category = categoryOrderCycle[categoryIndex];
-      const currentIndex = state.currentMessageIndices.get(category) ?? 0;
-      const messagesForCategory = messages[category] ?? [];
-      const nextText = messagesForCategory[currentIndex];
-
-      if (nextText) {
-        state.currentCategoryIndex = (categoryIndex + 1) % categoryOrderCycle.length;
-        state.currentMessageIndices.set(category, currentIndex + 1);
-        displayed.push({ category, index: currentIndex });
-        return { category, text: nextText, displayed };
-      }
+    const nextEntry = messageQueue[state.currentMessageIndex];
+    if (!nextEntry) {
+      return null;
     }
-
-    return null;
+    state.currentMessageIndex += 1;
+    return nextEntry;
   }
 
   function updateMeter() {
@@ -352,7 +338,7 @@ function initializeApp({ messages, categoryOrderCycle }) {
       state.progress = 100;
       updateMeter();
       triggerCompletion();
-      persistState([]);
+      persistState();
       return;
     }
 
@@ -364,7 +350,6 @@ function initializeApp({ messages, categoryOrderCycle }) {
       navigator.vibrate(10);
     }
 
-    state.displayedHistory.push({ category: result.category, index: state.currentMessageIndices.get(result.category) - 1 });
     persistState();
 
     if (state.progress >= 100) {
@@ -381,11 +366,10 @@ function initializeApp({ messages, categoryOrderCycle }) {
     elements.completionText.textContent = finalText;
     elements.ctaGroup.innerHTML = '';
     const hugButton = createCTAButton('Peluk Aku', () => openDialog(elements.hugModal));
-    const talkButton = createCTAButton('Kita Ngobrol Yuk?', () => openDialog(elements.talkDialog));
     const celebrateButton = createCTAButton('Mwaaa😘❣️', (event, button) => {
       shootEmojiConfetti(button);
     });
-    elements.ctaGroup.append(hugButton, talkButton, celebrateButton);
+    elements.ctaGroup.append(hugButton, celebrateButton);
     setCatMood('hug', { transform: 'translateY(-6px) scale(1.05)', forceReload: true });
     persistState();
   }
@@ -451,9 +435,7 @@ function initializeApp({ messages, categoryOrderCycle }) {
       return;
     }
     state.progress = 0;
-    state.currentCategoryIndex = 0;
-    state.currentMessageIndices.clear();
-    state.displayedHistory = [];
+    state.currentMessageIndex = 0;
     state.isCompleting = false;
     state.lastInteraction = 0;
     elements.messageList.innerHTML = '';
@@ -537,7 +519,6 @@ function initializeApp({ messages, categoryOrderCycle }) {
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       if (elements.hugModal.open) elements.hugModal.close('cancel');
-      if (elements.talkDialog.open) elements.talkDialog.close('cancel');
     }
   });
 }

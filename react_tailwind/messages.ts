@@ -23,11 +23,3 @@ export const messages = {
     "Aku sayang kamu, dan aku benar-benar ingin memperbaiki ini. Mau peluk dulu atau kita ngobrol dulu?"
   ]
 };
-
-export const categoryOrderCycle: (keyof typeof messages)[] = [
-  'acknowledgements',
-  'accountability',
-  'intentions',
-  'softeners',
-  'aww'
-];

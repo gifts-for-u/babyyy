@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { categoryOrderCycle, messages } from '../messages';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { messages } from '../messages';
 
 const STORAGE_KEYS = {
   progress: 'apology_progress',
@@ -26,10 +26,11 @@ const getRandomFillLabel = (exclude?: string) => {
 };
 
 type Category = keyof typeof messages;
-
-type DisplayedPointer = {
-  category: Category;
+type DisplayCategory = Exclude<Category, 'final'>;
+type SequenceEntry = {
+  category: DisplayCategory;
   index: number;
+  text: string;
 };
 
 type Heart = {
@@ -51,10 +52,16 @@ const useReducedMotion = () => {
   return prefers;
 };
 
-const totalMessages = categoryOrderCycle.reduce((total, category) => {
-  const list = messages[category];
-  return total + (Array.isArray(list) ? list.length : 0);
-}, 0);
+const messageCategories = Object.keys(messages)
+  .filter((key) => key !== 'final')
+  .map((key) => key as DisplayCategory);
+
+const messageSequence: SequenceEntry[] = messageCategories.flatMap((category) => {
+  const bucket = Array.isArray(messages[category]) ? messages[category] : [];
+  return bucket.map((text, index) => ({ category, index, text }));
+});
+
+const totalMessages = messageSequence.length;
 const STEP_VALUE = totalMessages ? Math.ceil(100 / totalMessages) : 100;
 
 const HEART_URL = 'https://www.svgrepo.com/show/535436/heart.svg';
@@ -243,14 +250,11 @@ export function FloatingHearts({ hearts }: { hearts: Heart[] }) {
   );
 }
 
-export function CTAGroup({ onHug, onTalk }: { onHug: () => void; onTalk: () => void }) {
+export function CTAGroup({ onHug }: { onHug: () => void }) {
   return (
     <div className="flex flex-col items-center gap-[5px] sm:flex-row sm:justify-center">
       <button type="button" className="button-primary" onClick={onHug}>
         Peluk Aku
-      </button>
-      <button type="button" className="button-primary" onClick={onTalk}>
-        Kita Ngobrol Yuk?
       </button>
       <button
         type="button"
@@ -344,85 +348,13 @@ export function ModalHug({ open, onClose }: { open: boolean; onClose: () => void
   );
 }
 
-export function DialogTalk({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const dialogRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const dialog = dialogRef.current;
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-      }
-      if (event.key === 'Tab' && dialog) {
-        const focusable = dialog.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        if (focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        }
-      }
-    };
-    const prev = document.activeElement as HTMLElement | null;
-    const timer = window.setTimeout(() => dialog?.querySelector<HTMLElement>('button')?.focus(), 0);
-    document.addEventListener('keydown', handleKey);
-    return () => {
-      window.clearTimeout(timer);
-      document.removeEventListener('keydown', handleKey);
-      prev?.focus();
-    };
-  }, [open, onClose]);
-
-  if (!open) return null;
-
-  return (
-    <div
-      ref={dialogRef}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="talk-title"
-      className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-6"
-    >
-      <div className="glass-card w-full max-w-md space-y-4 p-6 text-center">
-        <h2 id="talk-title" className="text-2xl font-semibold text-[#432946]">Kapan kita ngobrol?</h2>
-        <p className="text-[#432946]">Aku siap dengerin penuh hati, kapan pun kamu nyaman.</p>
-        <div className="flex flex-col gap-3">
-          {['Nanti malam', 'Besok sore', 'Pilih waktu lain'].map((option) => (
-            <button key={option} type="button" className="button-primary" onClick={onClose}>
-              {option}
-            </button>
-          ))}
-        </div>
-        <button type="button" className="button-secondary" onClick={onClose}>
-          Tutup
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
   const [progress, setProgress] = useState(0);
-  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
-  const [messagePointers, setMessagePointers] = useState<Record<Category, number>>({
-    acknowledgements: 0,
-    accountability: 0,
-    intentions: 0,
-    softeners: 0,
-    aww: 0,
-    final: 0
-  });
-  const [displayed, setDisplayed] = useState<DisplayedPointer[]>([]);
+  const [messageIndex, setMessageIndex] = useState(0);
+  const [displayed, setDisplayed] = useState<SequenceEntry[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [hearts, setHearts] = useState<Heart[]>([]);
   const [hugOpen, setHugOpen] = useState(false);
-  const [talkOpen, setTalkOpen] = useState(false);
   const [introVisible, setIntroVisible] = useState(true);
   const throttleRef = useRef(0);
   const prefersReducedMotion = useReducedMotion();
@@ -443,17 +375,10 @@ export default function App() {
     }
     if (storedPointer) {
       try {
-        const parsed = JSON.parse(storedPointer) as {
-          currentCategoryIndex: number;
-          currentMessageIndices: [Category, number][];
-          displayed: DisplayedPointer[];
-        };
-        setCurrentCategoryIndex(parsed.currentCategoryIndex ?? 0);
-        setMessagePointers((prev) => ({
-          ...prev,
-          ...Object.fromEntries(parsed.currentMessageIndices ?? [])
-        }));
-        setDisplayed(parsed.displayed ?? []);
+        const parsed = JSON.parse(storedPointer) as { currentMessageIndex?: number };
+        const pointer = parsed.currentMessageIndex ?? 0;
+        setMessageIndex(pointer);
+        setDisplayed(messageSequence.slice(0, pointer));
         if (storedProgress >= 100) {
           setIsComplete(true);
         }
@@ -468,36 +393,20 @@ export default function App() {
       return;
     }
     const payload = {
-      currentCategoryIndex,
-      currentMessageIndices: Object.entries(messagePointers) as [Category, number][],
-      displayed
+      currentMessageIndex: messageIndex
     };
     localStorage.setItem(STORAGE_KEYS.progress, String(progress));
     localStorage.setItem(STORAGE_KEYS.pointer, JSON.stringify(payload));
-  }, [currentCategoryIndex, messagePointers, displayed, progress]);
+  }, [messageIndex, progress]);
 
-  const nextMessage = useCallback((): DisplayedPointer | null => {
-    for (let attempt = 0; attempt < categoryOrderCycle.length; attempt += 1) {
-      const categoryIndex = (currentCategoryIndex + attempt) % categoryOrderCycle.length;
-      const category = categoryOrderCycle[categoryIndex] as Category;
-      const pointer = messagePointers[category] ?? 0;
-      const bucket = messages[category];
-      const text = bucket?.[pointer];
-      if (text) {
-        setCurrentCategoryIndex((categoryIndex + 1) % categoryOrderCycle.length);
-        setMessagePointers((prev) => ({ ...prev, [category]: pointer + 1 }));
-        return { category, index: pointer };
-      }
+  const nextMessage = useCallback((): SequenceEntry | null => {
+    if (messageIndex >= messageSequence.length) {
+      return null;
     }
-    return null;
-  }, [currentCategoryIndex, messagePointers]);
-
-  const displayedMessages = useMemo(() => {
-    return displayed.map((item) => ({
-      ...item,
-      text: messages[item.category]?.[item.index]
-    })).filter((item): item is DisplayedPointer & { text: string } => Boolean(item.text));
-  }, [displayed]);
+    const entry = messageSequence[messageIndex];
+    setMessageIndex(messageIndex + 1);
+    return entry;
+  }, [messageIndex]);
 
   const handleFill = useCallback(() => {
     if (introVisible) return;
@@ -510,32 +419,33 @@ export default function App() {
       return;
     }
 
-    const pointer = nextMessage();
-    if (!pointer) {
+    const entry = nextMessage();
+    if (!entry) {
       setProgress(100);
       setIsComplete(true);
       return;
     }
 
     setProgress((prev) => clamp(prev + STEP_VALUE, 0, 100));
-    setDisplayed((prev) => [...prev, pointer]);
+    setDisplayed((prev) => [...prev, entry]);
 
-    setHearts((prev) => {
-      if (prefersReducedMotion) return prev;
-      const count = Math.floor(Math.random() * 5) + 2;
-      const newHearts: Heart[] = Array.from({ length: count }, (_, index) => ({
-        id: Date.now() + index,
-        left: Math.random() * 90 + 5,
-        size: 24 + Math.random() * 18,
-        duration: 900 + Math.random() * 500
-      }));
-      newHearts.forEach((heart) => {
-        window.setTimeout(() => {
-          setHearts((current) => current.filter((item) => item.id !== heart.id));
-        }, heart.duration + 200);
+    if (!prefersReducedMotion) {
+      setHearts((prev) => {
+        const count = Math.floor(Math.random() * 5) + 2;
+        const newHearts: Heart[] = Array.from({ length: count }, (_, index) => ({
+          id: Date.now() + index,
+          left: Math.random() * 90 + 5,
+          size: 24 + Math.random() * 18,
+          duration: 900 + Math.random() * 500
+        }));
+        newHearts.forEach((heart) => {
+          window.setTimeout(() => {
+            setHearts((current) => current.filter((item) => item.id !== heart.id));
+          }, heart.duration + 200);
+        });
+        return [...prev, ...newHearts];
       });
-      return [...prev, ...newHearts];
-    });
+    }
 
     if (navigator.vibrate) {
       navigator.vibrate(10);
@@ -550,15 +460,7 @@ export default function App() {
 
   const reset = useCallback(() => {
     setProgress(0);
-    setCurrentCategoryIndex(0);
-    setMessagePointers({
-      acknowledgements: 0,
-      accountability: 0,
-      intentions: 0,
-      softeners: 0,
-      aww: 0,
-      final: 0
-    });
+    setMessageIndex(0);
     setDisplayed([]);
     setIsComplete(false);
     setHearts([]);
@@ -579,14 +481,13 @@ export default function App() {
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        if (hugOpen) setHugOpen(false);
-        if (talkOpen) setTalkOpen(false);
+      if (event.key === 'Escape' && hugOpen) {
+        setHugOpen(false);
       }
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [hugOpen, talkOpen]);
+  }, [hugOpen]);
 
   const catMood: 'sad' | 'hopeful' | 'hug' = progress >= 100 ? 'hug' : displayed.length > 0 ? 'hopeful' : 'sad';
   const catCelebrating = catMood === 'hug' && isComplete;
@@ -622,8 +523,8 @@ export default function App() {
       <ApologyMeter value={progress} onFill={handleFill} onComplete={() => setIsComplete(true)} />
 
       <section aria-live="polite" aria-label="Pesan permintaan maaf" className="space-y-4">
-        {displayedMessages.map((item) => (
-          <MessageCard key={`${item.category}-${item.index}`} text={messages[item.category][item.index] ?? ''} />
+        {displayed.map((item) => (
+          <MessageCard key={`${item.category}-${item.index}`} text={item.text} />
         ))}
       </section>
 
@@ -632,7 +533,7 @@ export default function App() {
           <p className="text-lg text-[#432946]">
             {messages.final?.[0] ?? 'Aku ingin memperbaiki semuanya dengan kamu.'}
           </p>
-          <CTAGroup onHug={() => setHugOpen(true)} onTalk={() => setTalkOpen(true)} />
+          <CTAGroup onHug={() => setHugOpen(true)} />
         </section>
       )}
 
@@ -644,7 +545,6 @@ export default function App() {
       </footer>
 
       <ModalHug open={hugOpen} onClose={() => setHugOpen(false)} />
-      <DialogTalk open={talkOpen} onClose={() => setTalkOpen(false)} />
     </div>
   );
 }
