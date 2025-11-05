@@ -1,0 +1,18 @@
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Sedih tapi berharap</title>
+  <desc id="desc">Ilustrasi kucing pastel dengan telinga sedikit turun dan ekspresi sedih</desc>
+  <rect width="240" height="240" rx="32" fill="#fdf2f8" />
+  <g transform="translate(40 40)">
+    <ellipse cx="80" cy="120" rx="70" ry="60" fill="#f9e5ef" />
+    <ellipse cx="120" cy="120" rx="70" ry="60" fill="#f4d8e6" />
+    <ellipse cx="100" cy="110" rx="90" ry="80" fill="#fde7ef" />
+    <path d="M60 40 Q80 10 100 40" stroke="#f9a8d4" stroke-width="10" stroke-linecap="round" fill="none" />
+    <path d="M140 40 Q160 10 180 40" stroke="#f9a8d4" stroke-width="10" stroke-linecap="round" fill="none" />
+    <ellipse cx="110" cy="120" rx="85" ry="70" fill="#fff5f9" />
+    <ellipse cx="85" cy="110" rx="10" ry="14" fill="#3f3d56" />
+    <ellipse cx="135" cy="110" rx="10" ry="14" fill="#3f3d56" />
+    <path d="M100 140 q10 10 20 0" stroke="#f472b6" stroke-width="6" stroke-linecap="round" fill="none" />
+    <circle cx="110" cy="150" r="5" fill="#f472b6" />
+    <path d="M65 155 q45 45 90 0" stroke="#fcd0e8" stroke-width="14" stroke-linecap="round" fill="none" />
+  </g>
+</svg>
