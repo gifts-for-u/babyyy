@@ -223,11 +223,9 @@ function updateMeter() {
 function renderMessage(category, text, shouldScroll = true) {
   const template = elements.messageTemplate.content.cloneNode(true);
   const article = template.querySelector('.message');
-  const categoryLabel = template.querySelector('.message__category');
   const messageText = template.querySelector('.message__text');
 
   article.dataset.category = category;
-  categoryLabel.textContent = categoryToLabel(category);
   messageText.textContent = text;
 
   if (!shouldScroll) {
@@ -240,23 +238,6 @@ function renderMessage(category, text, shouldScroll = true) {
   elements.messageList.append(article);
   if (shouldScroll) {
     article.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'end' });
-  }
-}
-
-function categoryToLabel(category) {
-  switch (category) {
-    case 'acknowledgements':
-      return 'Mengakui Perasaanmu';
-    case 'accountability':
-      return 'Aku Bertanggung Jawab';
-    case 'intentions':
-      return 'Niat dan Perbaikan';
-    case 'softeners':
-      return 'Pelan-pelan Lembut';
-    case 'aww':
-      return 'Sedikit Gemas';
-    default:
-      return 'Pesan';
   }
 }
 

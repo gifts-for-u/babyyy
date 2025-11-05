@@ -197,15 +197,6 @@ body::before {
   animation: message-in 350ms ease-out forwards;
 }
 
-.message__category {
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--accent-dark);
-  margin: 0 0 0.35rem;
-}
-
 .message__text {
   margin: 0;
   font-size: 1rem;

@@ -72,15 +72,6 @@ const CAT_ASSETS = {
   }
 } as const;
 
-const labelByCategory: Record<Category, string> = {
-  acknowledgements: 'Mengakui Perasaanmu',
-  accountability: 'Aku Bertanggung Jawab',
-  intentions: 'Niat dan Perbaikan',
-  softeners: 'Pelan-pelan Lembut',
-  aww: 'Sedikit Gemas',
-  final: 'Penutup Hangat'
-};
-
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 export function ApologyMeter({ value, onFill, onComplete }: { value: number; onFill: () => void; onComplete?: () => void }) {
@@ -168,13 +159,10 @@ export function CatCharacter({ mood, celebrate = false }: { mood: 'sad' | 'hopef
   );
 }
 
-export function MessageCard({ text, category }: { text: string; category: Category }) {
+export function MessageCard({ text }: { text: string }) {
   return (
     <article className="glass-card border border-pink-200/40 p-5 shadow-lg shadow-pink-200/50 animate-[message-in_350ms_ease-out_forwards]">
-      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-pink-700">
-        {labelByCategory[category] ?? 'Pesan'}
-      </p>
-      <p className="mt-2 text-base text-[#432946]">{text}</p>
+      <p className="text-base text-[#432946]">{text}</p>
     </article>
   );
 }
@@ -573,7 +561,7 @@ export default function App() {
 
       <section aria-live="polite" aria-label="Pesan permintaan maaf" className="space-y-4">
         {displayedMessages.map((item) => (
-          <MessageCard key={`${item.category}-${item.index}`} category={item.category} text={messages[item.category][item.index] ?? ''} />
+          <MessageCard key={`${item.category}-${item.index}`} text={messages[item.category][item.index] ?? ''} />
         ))}
       </section>
 
