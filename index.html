@@ -1,22 +1,31 @@
 <!DOCTYPE html>
-<html lang="id" data-build-version="dev">
+<html lang="id">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Meteran Maaf</title>
-    <link rel="preload" href="styles.css" as="style" data-cache-bust="styles" data-base-href="styles.css" />
+    <link rel="preload" href="styles.css" as="style" />
     <link rel="preload" href="assets/cat/cat-8.png" as="image" />
     <link rel="preload" href="assets/cat/cat-9.png" as="image" />
-    <link rel="stylesheet" href="styles.css" data-cache-bust="styles" data-base-href="styles.css" />
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="app" data-state="intro">
-      <div class="screen intro" role="dialog" aria-modal="true" aria-labelledby="intro-title" aria-describedby="intro-sub">
+      <div
+        class="screen intro"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="intro-title"
+        aria-describedby="intro-sub"
+      >
         <div class="intro__overlay" aria-hidden="true"></div>
         <div class="intro__content">
-          <h1 id="intro-title">Aku tau kamu lagi kesal… dan aku paham kenapa.</h1>
-          <p id="intro-sub">Tap atau klik untuk mulai. Aku janji dengerin.</p>
-          <button class="intro__start" type="button">Mulai Pelan-Pelan</button>
+          <h1 id="intro-title">
+            Karena kamu masih kesel dan males sama aku jadinya aku mau bujuk
+            kamu hehehe
+          </h1>
+          <p id="intro-sub">Tap atau klik untuk mulai sayang.</p>
+          <button class="intro__start" type="button">Hayuu mulai</button>
         </div>
       </div>
       <header class="hero" aria-live="polite">
@@ -34,24 +43,49 @@
           <div class="cat__sparkle" aria-hidden="true"></div>
         </div>
         <div class="hero__text">
-          <h1>Meteran Maaf</h1>
-          <p class="hero__subtitle">Pelan-pelan isi dengan usaha tulus supaya hati kamu terasa lebih ringan.</p>
+          <h1>Kumpulan Kata Maaf</h1>
+          <p class="hero__subtitle">
+            Ini kumpulan minta maafku dan aku bujuk kamuu hehehe.
+          </p>
         </div>
       </header>
       <main>
         <section class="meter-section" aria-labelledby="meter-label">
           <div class="meter-header">
             <h2 id="meter-label">Apology Meter</h2>
-            <span class="meter-value" id="meter-value" aria-live="polite">0%</span>
+            <span class="meter-value" id="meter-value" aria-live="polite"
+              >0%</span
+            >
           </div>
-          <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-describedby="meter-label">
+          <div
+            class="meter"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            aria-describedby="meter-label"
+          >
             <div class="meter__fill" id="meter-fill"></div>
             <div class="meter__glow"></div>
           </div>
-          <button class="button button--primary" id="fill-button" type="button" aria-describedby="fill-hint">Isi dengan Usaha</button>
-          <p class="hint" id="fill-hint">Kamu juga bisa tap di ruang kosong untuk maju satu langkah.</p>
+          <button
+            class="button button--primary"
+            id="fill-button"
+            type="button"
+            aria-describedby="fill-hint"
+          >
+            Isi dengan Usaha
+          </button>
+          <p class="hint" id="fill-hint">
+            Kamu juga bisa tap di ruang kosong untuk maju satu langkah.
+          </p>
         </section>
-        <section class="messages" aria-live="polite" aria-label="Pesan permintaan maaf" id="message-list"></section>
+        <section
+          class="messages"
+          aria-live="polite"
+          aria-label="Pesan permintaan maaf"
+          id="message-list"
+        ></section>
         <section class="completion" id="completion" hidden>
           <p class="completion__text" id="completion-text"></p>
           <div class="cta-group" id="cta-group"></div>
