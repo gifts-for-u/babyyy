@@ -56,4 +56,8 @@
   .button-secondary {
     @apply inline-flex items-center justify-center rounded-full bg-pink-100 px-5 py-3 font-semibold text-pink-700 shadow-inner transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-400 active:scale-95;
   }
+
+  .button-soft {
+    @apply inline-flex items-center justify-center rounded-full border-2 border-pink-400/80 bg-[#fff4ea] px-6 py-3 font-semibold text-pink-500 shadow-lg shadow-pink-200/50 transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-400 active:scale-95;
+  }
 }

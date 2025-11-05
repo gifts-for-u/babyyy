@@ -7,6 +7,17 @@ const STORAGE_KEYS = {
 
 const SHOULD_PERSIST_PROGRESS = false;
 
+const FILL_BUTTON_LABELS = [
+  'maaff babyy',
+  'maaff sayangg',
+  'aku minta maaff',
+  'maaff cantik akuu',
+  'mamas minta maaff',
+  'maaff yaa cantikk'
+];
+
+let lastFillButtonLabel = '';
+
 const state = {
   progress: 0,
   currentCategoryIndex: 0,
@@ -91,6 +102,20 @@ function setCatMood(mood, options = {}) {
     elements.catImage.dataset.usingFallback = 'false';
     elements.catImage.src = asset.primary;
   }
+}
+
+function setRandomFillButtonLabel() {
+  if (!elements.fillButton || FILL_BUTTON_LABELS.length === 0) return;
+  let nextLabel = lastFillButtonLabel;
+  if (FILL_BUTTON_LABELS.length === 1) {
+    nextLabel = FILL_BUTTON_LABELS[0];
+  } else {
+    while (nextLabel === lastFillButtonLabel) {
+      nextLabel = FILL_BUTTON_LABELS[Math.floor(Math.random() * FILL_BUTTON_LABELS.length)];
+    }
+  }
+  elements.fillButton.textContent = nextLabel;
+  lastFillButtonLabel = nextLabel;
 }
 
 attachImageFallback(elements.catImage);
@@ -258,10 +283,14 @@ function triggerHearts() {
   }
 }
 
-function handleInteraction() {
+function handleInteraction(origin = 'ambient') {
   const now = Date.now();
   if (now - state.lastInteraction < 500) return;
   state.lastInteraction = now;
+
+  if (origin === 'button') {
+    setRandomFillButtonLabel();
+  }
 
   if (state.progress >= 100) {
     triggerCompletion();
@@ -416,13 +445,13 @@ function setupEventListeners() {
     }
   });
 
-  elements.fillButton.addEventListener('click', () => handleInteraction());
+  elements.fillButton.addEventListener('click', () => handleInteraction('button'));
   elements.resetButton.addEventListener('click', () => resetProgress(false));
   elements.app.addEventListener('keydown', (event) => {
     if (event.key === ' ' || event.key === 'Enter') {
       if (document.activeElement === elements.fillButton) {
         event.preventDefault();
-        handleInteraction();
+        handleInteraction('button');
       }
     }
   });
@@ -432,6 +461,7 @@ setupIntro();
 hydrateStateFromStorage();
 setupCatIdleAnimations();
 setupEventListeners();
+setRandomFillButtonLabel();
 
 if ('IntersectionObserver' in window) {
   const observer = new IntersectionObserver((entries) => {

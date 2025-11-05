@@ -10,6 +10,21 @@ const STORAGE_KEYS = {
 
 const SHOULD_PERSIST_PROGRESS = false as const;
 
+const FILL_BUTTON_LABELS = [
+  'maaff babyy',
+  'maaff sayangg',
+  'aku minta maaff',
+  'maaff cantik akuu',
+  'mamas minta maaff',
+  'maaff yaa cantikk'
+] as const;
+
+const getRandomFillLabel = (exclude?: string) => {
+  const pool = FILL_BUTTON_LABELS.filter((label) => label !== exclude);
+  const source = pool.length > 0 ? pool : [...FILL_BUTTON_LABELS];
+  return source[Math.floor(Math.random() * source.length)];
+};
+
 type Category = keyof typeof messages;
 
 type DisplayedPointer = {
@@ -69,13 +84,20 @@ const labelByCategory: Record<Category, string> = {
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 export function ApologyMeter({ value, onFill, onComplete }: { value: number; onFill: () => void; onComplete?: () => void }) {
+  const [fillLabel, setFillLabel] = useState(() => getRandomFillLabel());
+
+  const handleFillClick = useCallback(() => {
+    setFillLabel((current) => getRandomFillLabel(current));
+    onFill();
+  }, [onFill]);
+
   useEffect(() => {
     if (value >= 100) {
       onComplete?.();
     }
   }, [value, onComplete]);
   return (
-    <section className="glass-card p-6 space-y-4" aria-labelledby="meter-label">
+    <section className="glass-card mb-[2vh] p-6 space-y-4" aria-labelledby="meter-label">
       <div className="flex items-center justify-between gap-4">
         <h2 id="meter-label" className="text-xl font-semibold text-[#432946]">Apology Meter</h2>
         <span className="text-lg font-semibold" aria-live="polite">{value}%</span>
@@ -94,13 +116,8 @@ export function ApologyMeter({ value, onFill, onComplete }: { value: number; onF
         />
         <div className="pointer-events-none absolute -inset-2 rounded-full bg-pink-200/60 blur-xl" aria-hidden />
       </div>
-      <button
-        type="button"
-        className="button-primary"
-        onClick={onFill}
-        aria-describedby="fill-hint"
-      >
-        Isi dengan Usaha
+      <button type="button" className="button-primary" onClick={handleFillClick} aria-describedby="fill-hint">
+        {fillLabel}
       </button>
       <p id="fill-hint" className="text-sm text-[#6c4c70]">
         Tap atau klik ruang kosong juga bisa untuk maju satu langkah.
@@ -185,7 +202,7 @@ export function FloatingHearts({ hearts }: { hearts: Heart[] }) {
 
 export function CTAGroup({ onHug, onTalk }: { onHug: () => void; onTalk: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+    <div className="flex flex-col items-center gap-[5px] sm:flex-row sm:justify-center">
       <button type="button" className="button-primary" onClick={onHug}>
         Peluk Aku
       </button>
@@ -534,7 +551,7 @@ export default function App() {
             <p className="text-base text-white/80">Tap atau klik untuk mulai. Aku janji dengerin sepenuh hati.</p>
             <button
               type="button"
-              className="button-primary mx-auto"
+              className="button-soft mx-auto"
               onClick={() => setIntroVisible(false)}
             >
               Mulai Pelan-Pelan
@@ -561,7 +578,7 @@ export default function App() {
       </section>
 
       {isComplete && (
-        <section className="glass-card space-y-4 p-6 text-center" aria-live="polite">
+        <section className="glass-card mt-[2vh] space-y-4 p-6 text-center" aria-live="polite">
           <p className="text-lg text-[#432946]">
             {messages.final?.[0] ?? 'Aku ingin memperbaiki semuanya dengan kamu.'}
           </p>
